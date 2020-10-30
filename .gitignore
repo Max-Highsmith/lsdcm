@@ -5,3 +5,4 @@ Data/__pycache__/
 Data/Constraints
 Data/Full_Mats/
 Data/Splits/
+lightning_logs/*

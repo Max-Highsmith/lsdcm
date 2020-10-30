@@ -9,13 +9,23 @@ from pytorch_lightning import Trainer
 
 class VAE_Model(pl.LightningModule):
 
-    def __init__(self):
+    def __init__(self,
+            kld_weight=0.001,
+            lr=0.0001,
+            gamma=0.99,
+            latent_dim=100,
+            pre_latent=4608,
+            condensed_latent=3,
+            ):
         super(VAE_Model, self).__init__()
-        self.latent_dim  = 400
-        self.PRE_LATENT  = 41472
-        self.CONDENSED_LATENT = 9
-        modules          = []
-        hidden_dims      = [32, 64, 128, 256, 512]
+        self.kld_weight       = kld_weight
+        self.lr               = lr
+        self.gamma            = gamma
+        self.latent_dim       = latent_dim
+        self.PRE_LATENT       = pre_latent
+        self.CONDENSED_LATENT = condensed_latent
+        hidden_dims      = [32, 64, 128, 256, 256, 512, 512]
+        modules               = []
 
         in_channels = 1 
         #Build Encoder
@@ -52,7 +62,7 @@ class VAE_Model(pl.LightningModule):
                     nn.BatchNorm2d(hidden_dims[i+1]),
                     nn.LeakyReLU())
                 )
-
+        
         self.decoder = nn.Sequential(*modules)
         self.final_layer = nn.Sequential(
                         nn.ConvTranspose2d(hidden_dims[-1],
@@ -65,7 +75,8 @@ class VAE_Model(pl.LightningModule):
                         nn.LeakyReLU(),
                         nn.Conv2d(hidden_dims[-1], out_channels=1,
                                 kernel_size=3, padding=1),
-                        nn.Tanh())
+                        #nn.Tanh())
+                        nn.Sigmoid())
 
     def encode(self, x):
         """
@@ -118,17 +129,23 @@ class VAE_Model(pl.LightningModule):
     def forward(self, x):
         mu, log_var = self.encode(x)
         z = self.reparameterize(mu, log_var)
-        return  [self.decode(z), x, mu, log_var]
+        recon = self.decode(z)
+        return  [recon, x, mu, log_var]
 
     def loss_function(self, *args):
         recons  = args[0]
         x       = args[1]
         mu      = args[2]
         log_var = args[3]
+        
+        kld_weight = self.kld_weight #.0001 #self.batch_size/ self.num_train_imgs
 
         recon_loss = F.mse_loss(recons, x)
         kld_loss   = torch.mean(-0.5 * torch.sum(1 + log_var - mu **2 - log_var.exp(), dim = 1), dim = 0)
-        loss = recon_loss + kld_loss
+        loss = kld_loss #recon_loss + (kld_weight*kld_loss)
+        self.log('train_loss', loss)
+        self.log('recon_loss', recon_loss)
+        self.log('kld_loss', kld_loss)
         return loss, recon_loss, kld_loss
 
     def training_step(self, batch, batch_idx):
@@ -142,10 +159,14 @@ class VAE_Model(pl.LightningModule):
         results                    = self.forward(target)
         loss, recon_loss, kld_loss = self.loss_function(*results) 
         return loss
+    
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
-        return optimizer
+        optimizer = torch.optim.Adam(self.parameters(),
+                                    lr=self.lr)
+        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer,
+                                                gamma=self.gamma)
+        return [optimizer], [scheduler]
 
 
 
