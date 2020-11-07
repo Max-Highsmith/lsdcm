@@ -1,3 +1,4 @@
+import torch
 import pdb
 import pytorch_lightning as pl
 import math
@@ -10,7 +11,9 @@ from pytorch_lightning import Trainer
 class VAE_Model(pl.LightningModule):
 
     def __init__(self,
-            kld_weight=0.001,
+            batch_size=-9,
+            kld_weight=0.0,
+            kld_weight_inc=0.000,
             lr=0.0001,
             gamma=0.99,
             latent_dim=100,
@@ -18,6 +21,10 @@ class VAE_Model(pl.LightningModule):
             condensed_latent=3,
             ):
         super(VAE_Model, self).__init__()
+        torch.manual_seed(0)
+        self.batch_size       = batch_size
+        self.epoch_num        = 0
+        self.kld_weight_inc   = kld_weight_inc
         self.kld_weight       = kld_weight
         self.lr               = lr
         self.gamma            = gamma
@@ -26,6 +33,8 @@ class VAE_Model(pl.LightningModule):
         self.CONDENSED_LATENT = condensed_latent
         hidden_dims      = [32, 64, 128, 256, 256, 512, 512]
         modules               = []
+
+        self.save_hyperparameters()
 
         in_channels = 1 
         #Build Encoder
@@ -95,7 +104,7 @@ class VAE_Model(pl.LightningModule):
 
         return [mu, log_var]
 
-
+    '''
     def decode(self, z):
         """
         Maps the given latent codes
@@ -111,6 +120,30 @@ class VAE_Model(pl.LightningModule):
         result = self.decoder(result)
         result = self.final_layer(result)
         return result
+    '''
+
+
+    def decode(self, z):
+        """
+        Maps the given latent codes
+        onto the image space.
+        :param z: (Tensor) [B x D]
+        :return: (Tensor) [B x C x H x W]
+        """
+        rez  = self.decoder_input(z)
+        rez  = rez.view(-1,
+                512,
+                self.CONDENSED_LATENT,
+                self.CONDENSED_LATENT)
+        result  = list(self.decoder.children())[0](rez)
+        result  = list(self.decoder.children())[1](result)
+        result  = list(self.decoder.children())[2](result)
+        result  = list(self.decoder.children())[3](result)
+        result  = list(self.decoder.children())[4](result)
+        result  = list(self.decoder.children())[5](result)
+        #result = self.decoder(result)
+        result = self.final_layer(result)
+        return result
 
     def reparameterize(self, mu, logvar):
         """
@@ -124,7 +157,10 @@ class VAE_Model(pl.LightningModule):
         eps = torch.randn_like(std)
         return eps * std + mu
 
-    
+    def get_z(self, x):
+        mu, log_var = self.encode(x)
+        z           = self.reparameterize(mu, log_var)
+        return z, mu, log_var
 
     def forward(self, x):
         mu, log_var = self.encode(x)
@@ -142,7 +178,8 @@ class VAE_Model(pl.LightningModule):
 
         recon_loss = F.mse_loss(recons, x)
         kld_loss   = torch.mean(-0.5 * torch.sum(1 + log_var - mu **2 - log_var.exp(), dim = 1), dim = 0)
-        loss = kld_loss #recon_loss + (kld_weight*kld_loss)
+        loss = recon_loss + (kld_weight*kld_loss)
+        self.log('kld_weight', kld_weight)
         self.log('train_loss', loss)
         self.log('recon_loss', recon_loss)
         self.log('kld_loss', kld_loss)
@@ -153,6 +190,12 @@ class VAE_Model(pl.LightningModule):
         results                    = self.forward(target)
         loss, recon_loss, kld_loss = self.loss_function(*results) 
         return loss
+
+    def training_epoch_end(self, training_step_outputs):
+        print(self.epoch_num)
+        self.epoch_num = self.epoch_num+1
+        if self.epoch_num > 0:
+           self.kld_weight = self.kld_weight+self.kld_weight_inc
 
     def validation_step(self, batch, batch_idx):
         data, target               = batch

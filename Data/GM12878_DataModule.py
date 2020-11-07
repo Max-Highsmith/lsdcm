@@ -76,7 +76,7 @@ class GM12878Module(pl.LightningDataModule):
         if len(globs) == 0:
             extract_create_numpy()
 
-        for i in range(15,18):
+        for i in range(1,23):
             target =  ut.splitPieces("Data/Full_Mats/gm12878_mat_high_chr"+str(i)+"_res_"+str(self.res)+".npy",self.piece_size, self.step)
             data   =  ut.splitPieces("Data/Full_Mats/gm12878_mat_low_chr"+str(i)+"_res_"+str(self.res)+".npy", self.piece_size, self.step)
             np.save("Data/Splits/gm12878_high_chr_"+str(i)+"_res_"+str(self.res), target)
@@ -132,10 +132,10 @@ class GM12878Module(pl.LightningDataModule):
 
     def setup(self, stage=None):
         if stage == 'fit':
-            self.train_set = self.gm12878Dataset(full=False, tvt='train', res=self.res)
-            self.val_set   = self.gm12878Dataset(full=False, tvt='val',   res=self.res)
+            self.train_set = self.gm12878Dataset(full=True, tvt='train', res=self.res)
+            self.val_set   = self.gm12878Dataset(full=True, tvt='val',   res=self.res)
         if stage == 'test':
-            self.test_set  = self.gm12878Dataset(full=False, tvt='test',  res=self.res)
+            self.test_set  = self.gm12878Dataset(full=True, tvt='test',  res=self.res)
     
     def train_dataloader(self):
             return DataLoader(self.train_set, self.batch_size, num_workers=12)

@@ -7,3 +7,4 @@ Data/Full_Mats/
 Data/Splits/
 lightning_logs/*
 figs/*
+__pycache__/*
