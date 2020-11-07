@@ -14,15 +14,16 @@ class GM12878Module(pl.LightningDataModule):
     def __init__(self,
             batch_size   = 64,
             res          = 10000,
-            juicer_tool  = "other_tools/juicer_tools_1.22.01.jar"):
+            juicer_tool  = "other_tools/juicer_tools_1.22.01.jar",
+            piece_size=257):
         super().__init__()
         self.juicer_tool = juicer_tool
         self.batch_size  = batch_size
         self.res         = res
         self.low_res_fn  = "Data/GSM1551550_HIC001_30.hic"
         self.hi_res_fn   = "Data/GSE63525_GM12878_insitu_primary_30.hic"
-        self.piece_size  = 257
         self.step        = 50
+        self.piece_size  = piece_size
 
     def download_raw_data(self):
         globs = glob.glob("Data/GSM1551550_HIC001_30.hic")
@@ -79,12 +80,12 @@ class GM12878Module(pl.LightningDataModule):
         for i in range(1,23):
             target =  ut.splitPieces("Data/Full_Mats/gm12878_mat_high_chr"+str(i)+"_res_"+str(self.res)+".npy",self.piece_size, self.step)
             data   =  ut.splitPieces("Data/Full_Mats/gm12878_mat_low_chr"+str(i)+"_res_"+str(self.res)+".npy", self.piece_size, self.step)
-            np.save("Data/Splits/gm12878_high_chr_"+str(i)+"_res_"+str(self.res), target)
-            np.save("Data/Splits/gm12878_low_chr_"+str(i)+"_res_"+str(self.res), data)
+            np.save("Data/Splits/gm12878_high_chr_"+str(i)+"_res_"+str(self.res)+"_piece_"+str(self.piece_size), target)
+            np.save("Data/Splits/gm12878_low_chr_"+str(i)+"_res_"+str(self.res)+"_piece_"+str(self.piece_size), data)
         
     def prepare_data(self):
         print("Preparing the Preparations ...")
-        globs       = glob.glob("Data/Splits/gm12878_high_chr_*_res_"+str(self.res)+str(".npy"))
+        globs       = glob.glob("Data/Splits/gm12878_high_chr_*_res_"+str(self.res)+"_piece_"+str(self.piece_size)+str(".npy"))
         if len(globs) > 20:
             print("Ready to go")
         else:
@@ -93,7 +94,8 @@ class GM12878Module(pl.LightningDataModule):
 
     
     class gm12878Dataset(Dataset):
-            def __init__(self, full, tvt, res):
+            def __init__(self, full, tvt, res, piece_size):
+                self.piece_size = piece_size
                 self.tvt = tvt
                 self.res = res
                 self.full = full
@@ -105,13 +107,15 @@ class GM12878Module(pl.LightningDataModule):
                     elif tvt == "test":
                         self.chros = [4,14,16,20]
 
-                    self.target = np.load("Data/Splits/gm12878_high_chr_"+str(self.chros[0])+"_res_"+str(self.res)+".npy")
-                    self.data   = np.load("Data/Splits/gm12878_low_chr_"+str(self.chros[0])+"_res_"+str(self.res)+".npy")
+                    self.target = np.load("Data/Splits/gm12878_high_chr_"+str(self.chros[0])+"_res_"+str(self.res)+"_piece_"+str(self.piece_size)+".npy")
+                    self.data   = np.load("Data/Splits/gm12878_low_chr_"+str(self.chros[0])+"_res_"+str(self.res)+"_piece_"+str(self.piece_size)+".npy")
+                    self.info   = np.repeat(self.chros[0], self.data.shape[0])
                     for c, chro in enumerate(self.chros[1:]):
-                        temp = np.load("Data/Splits/gm12878_high_chr_"+str(chro)+"_res_"+str(self.res)+".npy")
+                        temp = np.load("Data/Splits/gm12878_high_chr_"+str(chro)+"_res_"+str(self.res)+"_piece_"+str(self.piece_size)+".npy")
                         self.target = np.concatenate((self.target, temp))
-                        temp = np.load("Data/Splits/gm12878_low_chr_"+str(chro)+"_res_"+str(self.res)+".npy")
+                        temp = np.load("Data/Splits/gm12878_low_chr_"+str(chro)+"_res_"+str(self.res)+"_piece_"+str(self.piece_size)+".npy")
                         self.data   = np.concatenate((self.data, temp))
+                        self.info   = np.concatenate((self.info, np.repeat(chro, temp.shape[0])))
 
                 else:
                     if tvt   == "train":
@@ -120,22 +124,23 @@ class GM12878Module(pl.LightningDataModule):
                         self.chros = [16]
                     elif tvt == "test":
                         self.chros = [17]
-                    self.target = np.load("Data/Splits/gm12878_high_chr_"+str(self.chros[0])+"_res_"+str(self.res)+".npy")
-                    self.data   = np.load("Data/Splits/gm12878_low_chr_"+str(self.chros[0])+"_res_"+str(self.res)+".npy")
+                    self.target = np.load("Data/Splits/gm12878_high_chr_"+str(self.chros[0])+"_res_"+str(self.res)+"_piece_"+str(self.piece_size)+".npy")
+                    self.data   = np.load("Data/Splits/gm12878_low_chr_"+str(self.chros[0])+"_res_"+str(self.res)+"_piece_"+str(self.piece_size)+".npy")
+                    self.info   = np.repeat(self.chros[0], self.data.shape[0])
                    
 
             def __len__(self):
                 return self.data.shape[0]
 
             def __getitem__(self, idx):
-                return self.data[idx], self.target[idx]
+                return self.data[idx], self.target[idx], self.info[idx]
 
     def setup(self, stage=None):
         if stage == 'fit':
-            self.train_set = self.gm12878Dataset(full=True, tvt='train', res=self.res)
-            self.val_set   = self.gm12878Dataset(full=True, tvt='val',   res=self.res)
+            self.train_set = self.gm12878Dataset(full=True, tvt='train', res=self.res, piece_size=self.piece_size)
+            self.val_set   = self.gm12878Dataset(full=True, tvt='val',   res=self.res, piece_size=self.piece_size)
         if stage == 'test':
-            self.test_set  = self.gm12878Dataset(full=True, tvt='test',  res=self.res)
+            self.test_set  = self.gm12878Dataset(full=True, tvt='test',  res=self.res, piece_size=self.piece_size)
     
     def train_dataloader(self):
             return DataLoader(self.train_set, self.batch_size, num_workers=12)

@@ -48,7 +48,8 @@ class Generator(nn.Module):
         res_blocks = self.res_blocks(first_block)
         post_res_block = self.post_res_block(res_blocks)
         final_block = self.final_block(first_block + post_res_block)
-        return torch.tanh(final_block)
+        #return torch.tanh(final_block)
+        return torch.sigmoid(final_block)
 
     def init_params(self):
         for module in self.modules():
