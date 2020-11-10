@@ -1,3 +1,4 @@
+##the implementation of SSIM in this file is pulled from DeepHiC https://github.com/omegahh/DeepHiC
 import numpy as np
 import torch
 import torch.nn as nn
