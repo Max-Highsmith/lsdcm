@@ -100,6 +100,8 @@ class GM12878Module(pl.LightningDataModule):
                 self.res = res
                 self.full = full
                 if full == True:
+                    if tvt in list(range(1,23)):
+                        self.chros=[tvt]
                     if tvt   == "train":
                         self.chros = [1,3,5,6,7,9,11,12,13,15,17,18,19,21]
                     elif tvt == "val":
@@ -136,6 +138,8 @@ class GM12878Module(pl.LightningDataModule):
                 return self.data[idx], self.target[idx], self.info[idx]
 
     def setup(self, stage=None):
+        if stage in list(range(1,23)):
+            self.test_set  = self.gm12878Dataset(full=True, tvt=stage, res=self.res, piece_size=self.piece_size)
         if stage == 'fit':
             self.train_set = self.gm12878Dataset(full=True, tvt='train', res=self.res, piece_size=self.piece_size)
             self.val_set   = self.gm12878Dataset(full=True, tvt='val',   res=self.res, piece_size=self.piece_size)
