@@ -2,7 +2,7 @@ import vision_metrics as vm
 import numpy as np
 import glob
 import yaml
-from Data.GM12878_DataModule import GM12878Module
+from Data.K562_DataModule import K562Module
 import matplotlib.pyplot as plt
 import pdb
 import torch
@@ -17,11 +17,12 @@ import models_to_compare.models.deephic as deephic
 import models_to_compare.models.hicplus as hicplus
 import models_to_compare.models.hicsr   as hicsr
 
+CELL_LINE = "K562"
 
 #load data
-dm_test = GM12878Module(batch_size=1, res=10000, piece_size=269)
+dm_test = K562Module(batch_size=1, res=10000, piece_size=269)
 dm_test.prepare_data()
-#dm_test.setup(stage='test')
+dm_test.setup(stage='test')
 dm_test.setup(stage=20)
 ds     = torch.from_numpy(dm_test.test_dataloader().dataset.data[9:10])
 target = torch.from_numpy(dm_test.test_dataloader().dataset.target[9:10])
@@ -120,26 +121,26 @@ plt.show()
 
 
 v_m ={}
-chro = 20
+chro = 20 
 #compute vision metrics
 print("vehicle")
 visionMetrics = vm.VisionMetrics()
-visionMetrics.setDataset(chro)
+visionMetrics.setDataset(chro, cell_line=CELL_LINE)
 v_m[chro, 'vehicle']=visionMetrics.getMetrics(model=model_deepchromap, spliter="vehicle")
  
 print("HiCSR")
 visionMetrics = vm.VisionMetrics()
-visionMetrics.setDataset(chro)
+visionMetrics.setDataset(chro, cell_line=CELL_LINE)
 v_m[chro, 'hicsr']=visionMetrics.getMetrics(model=model_hicsr, spliter="hicsr")
 
 print("deephic")
 visionMetrics = vm.VisionMetrics()
-visionMetrics.setDataset(chro)
+visionMetrics.setDataset(chro, cell_line=CELL_LINE)
 v_m[chro, 'deephic']=visionMetrics.getMetrics(model=model_deephic, spliter="deephic")
 
 print("hicplus")
 visionMetrics = vm.VisionMetrics()
-visionMetrics.setDataset(chro)
+visionMetrics.setDataset(chro, cell_line=CELL_LINE)
 v_m[chro, 'hicplus']=visionMetrics.getMetrics(model=model_hicplus, spliter="hicplus")
 
 model_names  = ['downsampled', 'vehicle','hicsr', 'deephic','hicplus']

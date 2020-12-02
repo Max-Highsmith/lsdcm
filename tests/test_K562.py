@@ -4,13 +4,14 @@ import sys
 sys.path.append("../")
 sys.path.append("Data")
 sys.path.append(".")
-import GM12878_DataModule as dm
+import K562_DataModule as dm
 
 
-x = dm.GM12878Module()
+x = dm.K562Module()
 x.prepare_data()
-x.setup('test')
-for batch in x.test_dataloader():
+x.setup('fit')
+pdb.set_trace()
+for batch in x.train_dataloader():
     pdb.set_trace()
 #x.download_raw_data()
 #x.extract_constraint_mats()

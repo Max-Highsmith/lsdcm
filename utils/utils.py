@@ -43,7 +43,7 @@ def loadBothConstraints(stria, strib, res):
         matb[cb-smallbin, rb-smallbin] = ib
     diaga         = np.diag(mata)
     diagb         = np.diag(matb)
-    removeidx     = np.unique(np.concatenate((np.argwhere(diaga==0)[:,0], np.argwhere(diagb==0)[:,0])))
+    removeidx     = np.unique(np.concatenate((np.argwhere(diaga==0)[:,0], np.argwhere(diagb==0)[:,0], np.argwhere(np.isnan(diagb))[:,0])))
     mata = np.delete(mata, removeidx, axis=0)
     mata = np.delete(mata, removeidx, axis=1)
     per_a       = np.percentile(mata, 99.9)

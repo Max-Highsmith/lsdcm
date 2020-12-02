@@ -11,9 +11,9 @@ from loss import insulation as ins
 class GAN_Model(pl.LightningModule):
     def __init__(self):
         super(GAN_Model, self).__init__()
-        self.mse_lambda     = 1
-        self.tad_lambda     = .01
-        self.vae_lambda     = 1e-3 
+        self.mse_lambda     = 0#1
+        self.tad_lambda     = 1
+        self.vae_lambda     = 0#1e-3 
         self.gan_lambda     = 2.5e-3
         self.G_lr           = 1e-5
         self.D_lr           = 1e-5

@@ -8,3 +8,5 @@ Data/Splits/
 lightning_logs/*
 figs/*
 __pycache__/*
+other_tools/*
+*/__pycache__/*

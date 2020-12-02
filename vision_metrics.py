@@ -20,6 +20,7 @@ import torch
 import pdb
 from pytorch_lightning import Trainer
 from Data.GM12878_DataModule import GM12878Module
+from Data.K562_DataModule import K562Module
 from GAN_Module import GAN_Model
 
 class SSIM(nn.Module):
@@ -175,8 +176,11 @@ class VisionMetrics:
     def log_means(self, name):
         return (name, np.mean(self.metric_logs[name]))
 
-    def setDataset(self, chro, res=10000, piece_size=269):
-        self.dm_test      = GM12878Module(batch_size=1, res=res, piece_size=piece_size)
+    def setDataset(self, chro, res=10000, piece_size=269, cell_line="GM12878"):
+        if cell_line == "GM12878":
+            self.dm_test      = GM12878Module(batch_size=1, res=res, piece_size=piece_size)
+        if cell_line == "K562":
+            self.dm_test      = K562Module(batch_size=1, res=res, piece_size=piece_size)
         self.dm_test.prepare_data()
         self.dm_test.setup(stage=chro)
 
@@ -232,7 +236,7 @@ class VisionMetrics:
 
 if __name__=='__main__':
     visionMetrics = VisionMetrics()
-    visionMetrics.setDataset(20)
+    visionMetrics.setDataset(20, cell_line="K562")
     WEIGHT_PATH   = "deepchromap_weights.ckpt"
     model         = GAN_Model()
     pretrained_model = model.load_from_checkpoint(WEIGHT_PATH)
