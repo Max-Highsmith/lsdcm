@@ -19,9 +19,6 @@ from Data.GM12878_DataModule import GM12878Module
 from VAE_Module import VAE_Model
 
 
-#PARAMS
-NUM_SLIDERS = 15
-
 #Get Dataset
 parser    = argparse.ArgumentParser()
 parser.add_argument("version")

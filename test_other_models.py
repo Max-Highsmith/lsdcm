@@ -22,9 +22,10 @@ import models_to_compare.models.hicsr   as hicsr
 dm_test = GM12878Module(batch_size=1, res=10000, piece_size=269)
 dm_test.prepare_data()
 #dm_test.setup(stage='test')
-dm_test.setup(stage=20)
-ds     = torch.from_numpy(dm_test.test_dataloader().dataset.data[9:10])
-target = torch.from_numpy(dm_test.test_dataloader().dataset.target[9:10])
+dm_test.setup(stage=14)
+#data[9:10]
+ds     = torch.from_numpy(dm_test.test_dataloader().dataset.data[65:66])
+target = torch.from_numpy(dm_test.test_dataloader().dataset.target[65:66])
 
 #TODO  there is no hicGAN because there isn't a pytorch version available
 #TODO  hiCNN doesn't have pretrained weights
@@ -95,12 +96,20 @@ for i in range(0, 2):
     for j in range(0,6):
        ax[i,j].set_xticks([])
        ax[i,j].set_yticks([])
-ax[0,0].imshow(lowres_out, cmap="Reds")
-ax[0,1].imshow(hicplus_out, cmap="Reds")
-ax[0,2].imshow(deephic_out, cmap="Reds")
-ax[0,3].imshow(hicsr_out, cmap="Reds")
-ax[0,4].imshow(deepchromap_out, cmap="Reds")
-ax[0,5].imshow(target_out, cmap="Reds")
+'''
+ax[0,0].imshow(lowres_out -target_out, cmap="Reds")
+ax[0,1].imshow(hicplus_out -target_out, cmap="Reds")
+ax[0,2].imshow(deephic_out -target_out, cmap="Reds")
+ax[0,3].imshow(hicsr_out -target_out, cmap="Reds")
+ax[0,4].imshow(deepchromap_out - target_out, cmap="Reds")
+ax[0,5].imshow(target_out -target_out, cmap="Reds")
+'''
+ax[0,0].imshow(lowres_out -target_out, cmap="RdBu")
+ax[0,1].imshow(hicplus_out -target_out, cmap="RdBu")
+ax[0,2].imshow(deephic_out -target_out, cmap="RdBu")
+ax[0,3].imshow(hicsr_out -target_out, cmap="RdBu")
+ax[0,4].imshow(deepchromap_out - target_out, cmap="RdBu")
+ax[0,5].imshow(target_out -target_out, cmap="RdBu")
 
 ax[1,0].imshow(lowres_out[40:140,40:140], cmap="Reds")
 ax[1,1].imshow(hicplus_out[40:140,40:140], cmap="Reds")
@@ -108,6 +117,15 @@ ax[1,2].imshow(deephic_out[40:140,40:140], cmap="Reds")
 ax[1,3].imshow(hicsr_out[40:140,40:140], cmap="Reds")
 ax[1,4].imshow(deepchromap_out[40:140,40:140], cmap="Reds")
 ax[1,5].imshow(target_out[40:140,40:140], cmap="Reds")
+
+ax[1,0].imshow(lowres_out[40:140,40:140] - target_out[40:140, 40:140], cmap="RdBu")
+ax[1,1].imshow(hicplus_out[40:140,40:140]- target_out[40:140, 40:140], cmap="RdBu")# cmap="Reds")
+ax[1,2].imshow(deephic_out[40:140,40:140] - target_out[40:140, 40:140], cmap="RdBu")# , cmap="Reds")
+ax[1,3].imshow(hicsr_out[40:140,40:140]- target_out[40:140, 40:140], cmap="RdBu")#, cmap="Reds")
+ax[1,4].imshow(deepchromap_out[40:140,40:140] - target_out[40:140, 40:140], cmap="RdBu")#, cmap="Reds")
+ax[1,5].imshow(target_out[40:140,40:140]- target_out[40:140, 40:140], cmap="RdBu")#, cmap="Reds")
+
+
 
 
 ax[0,0].set_title("DownSampled")

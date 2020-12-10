@@ -19,6 +19,10 @@ from pytorch_lightning import Trainer
 from Data.GM12878_DataModule import GM12878Module
 from VAE_Module import VAE_Model
 
+import loss.insulation as ins
+tadfinder = ins.computeInsulation(window_radius=50)
+
+
 color_list = ['bisque',
         'lightcoral',
         'red',
@@ -83,58 +87,52 @@ test_info  = dm_test.test_dataloader().dataset.info
 
 all_outs   = []
 all_colors = []
+all_tads   = []
 
 for i in range(0, ds_train.shape[0]):
     test_out = pretrained_model(torch.tensor(ds_train[i:i+1]))
     all_outs.append(test_out[2])
     all_colors.append(color_list[train_info[i]])
+    all_tads.append(color_list[len(tadfinder(torch.from_numpy(ds_train[i:i+1]))[2][0])])
 
 for i in range(0, ds_val.shape[0]):
     test_out = pretrained_model(torch.tensor(ds_val[i:i+1]))
     all_outs.append(test_out[2])
     all_colors.append(color_list[val_info[i]])
+    all_tads.append(color_list[len(tadfinder(torch.from_numpy(ds_val[i:i+1]))[2][0])])
 
 for i in range(0, ds_test.shape[0]):
     test_out = pretrained_model(torch.tensor(ds_test[i:i+1]))
     all_outs.append(test_out[2])
     all_colors.append(color_list[test_info[i]])
+    all_tads.append(color_list[len(tadfinder(torch.from_numpy(ds_test[i:i+1]))[2][0])])
 
 latent_zs = torch.cat(all_outs,0)
 
-pdb.set_trace()
 
-pca     = PCA(n_components=2)
+pca     = PCA(n_components=15)
 pca_z  = pca.fit_transform(latent_zs)
 
-tsn     = TSNE(n_components=2)
-tsne_z  = tsn.fit_transform(latent_zs)
+tsn     = TSNE(n_components=15)
 
 
-fig, ax = plt.subplots()
-ax.scatter(pca_z[:,0],
-            pca_z[:,1],
-            c=all_colors,
-            s=[10]*len(pca_z))
+for i in range(0,15):
+    for j in range(0,15):
+        fig, ax = plt.subplots()
+        ax.scatter(pca_z[:,i],
+                    pca_z[:,j],
+                    c=all_tads,
+                    s=[10]*len(pca_z))
 
-ax.set_xticks([])
-ax.set_yticks([])
-ax.set_xlabel("PC1 ({:.2f}%)".format(100*pca.explained_variance_ratio_[0])+")")
-ax.set_ylabel("PC2 ({:.2f}%)".format(100*pca.explained_variance_ratio_[1])+")")
-ax.spines['right'].set_visible(False)
-ax.spines['top'].set_visible(False)
-plt.show()
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_xlabel("PC"+str(i)+" ({:.2f}%)".format(100*pca.explained_variance_ratio_[i])+")")
+        ax.set_ylabel("PC"+str(j)+" ({:.2f}%)".format(100*pca.explained_variance_ratio_[j])+")")
+        ax.spines['right'].set_visible(False)
+        ax.spines['top'].set_visible(False)
+        ax.legend()
+        plt.savefig("figs/pca/tads_length_"+str(i)+"_"+str(j)+".png")
+        plt.clf()
+        plt.close()
+        plt.cla()
 
-fig, ax = plt.subplots()
-ax.scatter(tsne_z[:,0],
-            tsne_z[:,1],
-            c=all_colors,
-            s=[10]*len(tsne_z))
-ax.set_xticks([])
-ax.set_yticks([])
-ax.set_xlabel("Dim 1")
-ax.set_ylabel("Dim 2")
-ax.spines['right'].set_visible(False)
-ax.spines['top'].set_visible(False)
-plt.show()
-
-#examin other features

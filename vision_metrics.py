@@ -216,7 +216,7 @@ class VisionMetrics:
                         output[:,:,i+6:i+34, j+6:j+34] = model(temp)
                 output = output[:,:,6:-6,6:-6].detach()
             
-            if spliter == "deephic":
+            if spliter == "deephic" or spliter =='vehicle' or spliter=='vae':
                 output   = torch.zeros((1,1,269,269))
                 for i in range(0, 269-40, 28):
                     for j in range(0,269-40,28):
